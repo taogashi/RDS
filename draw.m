@@ -42,4 +42,8 @@ plot(magz,'g');
 grid on;
 legend('mx','my','mz');
 
+%% draw ref
+figure;
+data = textread('INCMHS&INC.txt');
+plot(data(82:102,1:4));
 

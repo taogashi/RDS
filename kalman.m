@@ -219,8 +219,8 @@ grid on;
 
 %%
 figure;
-plot(incmhs*57.3);
+plot(360-incmhs*57.3);
 incmhs = lowPassProccess(b,a,incmhs,100);
 hold on;
-plot(incmhs*57.3,'r');
+plot(360-incmhs*57.3,'r');
 grid on;
