@@ -118,17 +118,10 @@ geth = @GetH;
 
 %程序使用了matlab ekf_ukf算法包，采用的是UKF方法
 for i=1:sampleNum
-    %predict
-%     [x, P] = ekf_predict1(x, P, geta, Q, afunc, eye(length(x)), dt);%[M,P] = ekf_predict1(M,P,A,Q,a,W,param)
+
     %预测更新
     [x, P, D] = ukf_predict1(x, P, afunc, Q, dt);%[M,P,D] = ukf_predict1(M,P,f,Q,f_param,alpha,beta,kappa,mat)
-
-%    x = INS_update(x,dt);
-%    A = GetA(x,dt);
-%    P = A*P*A'+Q;
-% 
-%    hx = GetEstiOb(x,m0);
-   
+    
    %extract measure from raw_data---------------------------------
    %获取观测量
    z = zeros(7,1);
@@ -144,24 +137,17 @@ for i=1:sampleNum
    z(1:3) = z(1:3)/gnorm;    %normalize
    z(4:6) = z(4:6)/mnorm;    %normalize   
    %rotation rate
-   z(7) = dMHS(i);
+   z(7) = dMHS(i);  %角速率观测
    wzRec(i) = z(7);
 
     %update
     if abs(z(1))<2 && abs(z(2))<2 %若加速度计噪声超过设定阈值，则本次不融合
-%        [x, P, K, Mu, S, LH] = ekf_update1(x, P, z, geth, R, hfunc, eye(length(z)), m0);     %[M,P,K,MU,S,LH] = ekf_update1(M,P,y,H,R,h,V,param)
      [x, P, K, Mu, S, LH] = ukf_update1(x, P, z, hfunc, R, m0);     %
     end
-
-%    H = GetH(x,m0);
-%    K = P*H'*(H*P*H'+R)^-1;  
-%    resiErr = z-hx;
-%    x = x+K*resiErr;
-%    P = (eye(5)-K*H)*P;
    
    %normalize quaternion
    x(1:4) = x(1:4)/norm(x(1:4));    %四元数归一化
-   xRec(:,i) = x;
+   xRec(:,i) = x;   %记录数据
    PRec(:,i) = diag(P,0);
   
    Cbn = myQuat2Cbn(x(1:4));
@@ -171,12 +157,18 @@ for i=1:sampleNum
    accRec(:,i) = z(1:3);
    myAccRec(:,i)=acc_guess;
 end
-%%
+
+%--------------------------------------------------
+%整个计算过程中角度均为弧度
+%绘图当中需要将弧度值乘以180除以Pi，即乘以57.3
+%-----------------------------------------------------
+
+%% 绘出加速度计滤波结果
 figure;
 plot([accRec;myAccRec]');
 legend('x','y','z','mx','my','mz');
 
-%%
+%% 绘出旋转角速率滤波结果和钻铤姿态角估计
 figure;
 subplot(2,1,1);
 hold off;
@@ -212,14 +204,11 @@ hold off;
 plot(angle(1,:)*57.3);
 hold on;
 plot(angle(2,:)*57.3,'r');
-% plot(refAngle(1,:)*57.3,'m');
-% plot(refAngle(2,:)*57.3,'c');
 plot(inc*57.3,'g');
 ylabel('angle (degree)');
 title('angle');
-% legend('roll','pitch','refroll','refpitch');
 grid on;
-%%
+%% 绘出钻铤姿态四元数估计和井斜角、井斜工具面角
 figure;
 subplot(2,1,1);
 hold off;
@@ -232,23 +221,14 @@ grid on;
 title('quaternion');
 subplot(2,1,2);
 plot(inc*57.3);
-% [b,a]=cheby1(3,0.6,0.001);
-% inc = lowPassProccess(b,a,inc,100);
-% hold on;
-% plot(inc*57.3,'r');
 title('INC');
 grid on;
 
-%%
 figure;
 plot(incmhs*57.3);
-% incmhs = lowPassProccess(b,a,incmhs,100);
-% hold on;
-% plot(360-incmhs*57.3,'r');
 grid on;
 
-%%
-figure;
+%% 计算结果与原公司计算结果的对比
 figure;
 refData = textread('INCMHS&INC.txt');
 refData = refData(82:102,1:4);
