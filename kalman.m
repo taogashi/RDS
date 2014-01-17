@@ -201,6 +201,11 @@ for i=1:sampleNum
    mb(:,i)=Cbn'*m0;
    incmhs(i) = acos(dot(mb(1:2,i),myAccRec(1:2,i))/(norm(mb(1:2,i))*norm(myAccRec(1:2,i))));
    
+   crs = cross(mb(:,i),myAccRec(:,i));
+   if crs(3)<0
+       incmhs(i) = 2*pi-incmhs(i);
+   end
+   
 end
 subplot(2,1,2);
 hold off;
@@ -227,17 +232,44 @@ grid on;
 title('quaternion');
 subplot(2,1,2);
 plot(inc*57.3);
-[b,a]=cheby1(3,0.6,0.001);
-inc = lowPassProccess(b,a,inc,100);
-hold on;
-plot(inc*57.3,'r');
+% [b,a]=cheby1(3,0.6,0.001);
+% inc = lowPassProccess(b,a,inc,100);
+% hold on;
+% plot(inc*57.3,'r');
 title('INC');
 grid on;
 
 %%
 figure;
-plot(360-incmhs*57.3);
-incmhs = lowPassProccess(b,a,incmhs,100);
+plot(incmhs*57.3);
+% incmhs = lowPassProccess(b,a,incmhs,100);
+% hold on;
+% plot(360-incmhs*57.3,'r');
+grid on;
+
+%%
+figure;
+figure;
+refData = textread('INCMHS&INC.txt');
+refData = refData(82:102,1:4);
+for i=1:floor(sampleNum/1000)
+    inc_av(i) = mean(inc((i-1)*1000+1:i*1000));
+    incmhs_av(i) = mean(incmhs((i-1)*1000+1:i*1000));
+end
+subplot(2,1,1);
+plot(refData(:,4),'g');
 hold on;
-plot(360-incmhs*57.3,'r');
+plot(refData(:,2),'b');
+plot(inc_av*57.3,'r');
+grid on;
+legend('ref','PLM','UKF');
+ylabel('INC (degree)');
+
+subplot(2,1,2);
+plot(refData(:,3),'g');
+hold on;
+plot(refData(:,1),'b');
+plot(incmhs_av*57.3,'r');
+legend('ref','PLM','UKF');
+ylabel('INCMHS (degree)');
 grid on;
